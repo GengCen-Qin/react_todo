@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 function AddTodo({addTodo}) {
   const [title, setTitle] = useState('')
@@ -53,6 +53,18 @@ export default function TodoList() {
   const [list, setList] = useState([])
   const [filter, setFilter] = useState('')
 
+  useEffect(() => {
+    const savedList = JSON.parse(localStorage.getItem('todoList'));
+    if (savedList.length !== 0) {
+      setList(savedList)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (list.length !== 0) {
+      localStorage.setItem('todoList', JSON.stringify(list));
+    }
+  }, [list])
 
   function addTodo(title) {
     setList([
