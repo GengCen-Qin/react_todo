@@ -1,4 +1,50 @@
-import { useContext, createContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useReducer, useState } from "react";
+
+function todoReducer(state, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return {
+        ...state,
+        list: [
+          ...state.list,
+          {
+            id: Date.now(),
+            title: action.payload,
+            complete: false
+          }
+        ]
+      };
+    case 'DELETE_TODO':
+      return {
+        ...state,
+        list: state.list.filter(todo => todo.id !== action.payload)
+      };
+    case 'TOGGLE_TODO':
+      return {
+        ...state,
+        list: state.list.map(todo =>
+          todo.id === action.payload ? { ...todo, complete: !todo.complete } : todo
+        )
+      };
+    case 'SET_FILTER':
+      return {
+        ...state,
+        filter: action.payload
+      };
+    case 'SET_THEME':
+      return {
+        ...state,
+        theme: action.payload
+      };
+    case 'SET_LIST':
+      return {
+        ...state,
+        list: action.payload
+      };
+    default:
+      return state;
+  }
+}
 
 function AddTodo({addTodo}) {
   const [title, setTitle] = useState('')
@@ -37,8 +83,8 @@ function Item({todo,deleteTodo, toggleTodo}) {
   )
 }
 
-function List({todos, deletTodo, toggleTodo}) {
-  return todos.map(todo => <Item key={todo.id} todo={todo} deleteTodo={deletTodo} toggleTodo={toggleTodo} />)
+function List({todos, deleteTodo, toggleTodo}) {
+  return todos.map(todo => <Item key={todo.id} todo={todo} deleteTodo={deleteTodo} toggleTodo={toggleTodo} />)
 }
 
 function FilterTodo({ setFilter }) {
@@ -54,69 +100,61 @@ function FilterTodo({ setFilter }) {
 const ThemeContext = createContext()
 
 export default function TodoList() {
-  const [list, setList] = useState([])
-  const [filter, setFilter] = useState('')
-  const [theme, setTheme] = useState('light');
+  const [state, dispatch] = useReducer(todoReducer, {
+    list: [],
+    filter: 'all',
+    theme: 'light'
+  });
+
   useEffect(() => {
     const savedList = JSON.parse(localStorage.getItem('todoList'));
     if (savedList.length !== 0) {
-      setList(savedList)
+      dispatch({ type: 'SET_LIST', payload: savedList });
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (list.length !== 0) {
-      localStorage.setItem('todoList', JSON.stringify(list));
+    if (state.list.length !== 0) {
+      localStorage.setItem('todoList', JSON.stringify(state.list));
     }
-  }, [list])
+  }, [state.list]);
 
   function addTodo(title) {
-    setList([
-      ...list,
-      {
-        id: Date.now(),
-        title: title,
-        complete: false
-      }
-    ])
+    dispatch({ type: 'ADD_TODO', payload: title });
   }
 
-  function deletTodo(id) {
-    setList( list.filter(todo => todo.id !== id) )
+  function deleteTodo(id) {
+    dispatch({ type: 'DELETE_TODO', payload: id });
   }
 
   function toggleTodo(id) {
-    setList(
-      list.map(todo =>
-        todo.id === id ? { ...todo, complete: !todo.complete } : todo
-      )
-    )
+    dispatch({ type: 'TOGGLE_TODO', payload: id });
   }
 
   function filterTodo() {
-    switch (filter) {
+    switch (state.filter) {
       case 'done':
-        return list.filter(todo => todo.complete);
+        return state.list.filter(todo => todo.complete);
       case 'non':
-        return list.filter(todo => !todo.complete);
+        return state.list.filter(todo => !todo.complete);
       default:
-        return list;
+        return state.list;
     }
   }
 
   return (
-    <ThemeContext.Provider value={theme}>
+    <ThemeContext.Provider value={state.theme}>
       <h1>Todo List</h1>
 
-      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+      <button onClick={() => dispatch({ type: 'SET_THEME', payload: state.theme === 'light' ? 'dark' : 'light' })}>
         Toggle Theme
       </button>
 
       <AddTodo addTodo={addTodo} />
 
-      <List todos={filterTodo(list)} deletTodo={deletTodo} toggleTodo={toggleTodo} />
+      <List todos={filterTodo()} deleteTodo={deleteTodo} toggleTodo={toggleTodo} />
 
-      <FilterTodo setFilter={setFilter} />
+      <FilterTodo setFilter={(filter) => dispatch({ type: 'SET_FILTER', payload: filter })} />
     </ThemeContext.Provider>
-  )
+  );
 }
