@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useContext, createContext, useEffect, useState } from "react"
 
 function AddTodo({addTodo}) {
   const [title, setTitle] = useState('')
@@ -22,9 +22,11 @@ function AddTodo({addTodo}) {
 }
 
 function Item({todo,deleteTodo, toggleTodo}) {
+  const theme = useContext(ThemeContext);
+
   return (
     <>
-      <div>
+      <div style={{ backgroundColor: theme === 'light' ? 'white' : 'black', color: theme === 'light' ? 'black' : 'white' }}>
         <li style={{
           color: todo.complete ? 'red' : 'black'
         }}>{ todo.title }</li>
@@ -49,10 +51,12 @@ function FilterTodo({ setFilter }) {
   )
 }
 
+const ThemeContext = createContext()
+
 export default function TodoList() {
   const [list, setList] = useState([])
   const [filter, setFilter] = useState('')
-
+  const [theme, setTheme] = useState('light');
   useEffect(() => {
     const savedList = JSON.parse(localStorage.getItem('todoList'));
     if (savedList.length !== 0) {
@@ -101,14 +105,18 @@ export default function TodoList() {
   }
 
   return (
-    <>
+    <ThemeContext.Provider value={theme}>
       <h1>Todo List</h1>
+
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
 
       <AddTodo addTodo={addTodo} />
 
       <List todos={filterTodo(list)} deletTodo={deletTodo} toggleTodo={toggleTodo} />
 
       <FilterTodo setFilter={setFilter} />
-    </>
+    </ThemeContext.Provider>
   )
 }
